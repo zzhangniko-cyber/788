@@ -1,0 +1,526 @@
+/* ============================================================
+   奔向2027 · 15分钟医疗圈 · 手绘田野笔记版
+   - 7色系统：纸白#FBF7F0 青绿#3FA98F 珊瑚#E8616B 琥珀#E8A33D
+              灰蓝#8A93A6 天蓝#5B8FD9 夜紫#6E5A9E
+   - 顶部粘性导航栏（锚点跳转）+ 右侧章节进度轴
+   - 封面深底压图（独立一页）+ 标题页大字（独立一屏）
+   - 排版三层制：.blk 正文块 / .blk-lead 引导句 / .ck 结论句
+   - 图注 = 珊瑚色标签；标题霞鹜文楷 / 正文Noto Sans SC / 数字Inter tabular
+   ============================================================ */
+
+:root{
+  --paper:  #FBF7F0;
+  --ink:    #2A2723;
+  --body:   #4A4640;
+  --mute:   #8A8177;
+  --line:   #E4DCCB;
+  --line2:  #EDE7DA;
+
+  --reach:  #3FA98F;  /* 青绿 · 可达/希望 */
+  --gap:    #E8616B;  /* 珊瑚 · 缺口/警示 */
+  --gapR:   #C5485C;
+  --crit:   #E8A33D;  /* 琥珀 · 时间/临界/口径 */
+  --critO:  #C08A2E;
+  --miss:   #8A93A6;  /* 灰蓝 · 缺失/未知 */
+  --path:   #5B8FD9;  /* 天蓝 · 交互/路径 */
+  --time:   #6E5A9E;  /* 夜紫 · 时间/夜晚 */
+  --accent: #F0DC9E;
+
+  --a1:#3FA98F; --a2:#5B8FD9; --a3:#6E5A9E; --a4:#E8616B; --a5:#E8A33D;
+
+  --font-title:"LXGW WenKai TC","LXGW WenKai","霞鹜文楷","Kaiti SC","STKaiti","KaiTi",'Noto Serif SC',serif;
+  --font-body:"Noto Sans SC","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  --font-num:"Inter","Archivo",ui-sans-serif,var(--font-body);
+
+  --measure:34em;       /* 16px × 34 ≈ 544px：正文一栏到底 */
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;overflow-x:hidden}
+body{
+  font-family:var(--font-body);color:var(--body);background:var(--paper);
+  line-height:1.85;font-size:16px;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+::selection{background:var(--accent);color:#2a2723}
+
+/* ---------- 纸面底纹：极浅颗粒（透明章节层下可见） ---------- */
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.62;
+  background-image:radial-gradient(rgba(58,55,48,.05) 1px,transparent 1.35px);
+  background-size:5px 5px;
+}
+
+/* ============================================================
+   顶部导航栏（锚点跳转）
+   ============================================================ */
+.topnav{
+  position:fixed;top:0;left:0;right:0;z-index:60;
+  display:flex;align-items:center;gap:16px;
+  padding:0 max(16px,3.5vw);
+  height:58px;
+  background:rgba(251,247,240,.88);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+  transition:background .45s ease,border-color .45s ease;
+}
+.topnav .brand{
+  display:flex;flex-direction:column;line-height:1.15;white-space:nowrap;
+  font-family:var(--font-title);font-weight:700;color:var(--ink);font-size:15px;
+  text-decoration:none;
+}
+.topnav .brand small{font-family:var(--font-body);font-size:9.5px;color:var(--reach);font-weight:600}
+.topnav .links{display:flex;align-items:center;gap:2px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.topnav .links::-webkit-scrollbar{display:none}
+.topnav a{
+  text-decoration:none;color:var(--mute);font-size:13px;font-weight:500;
+  padding:7px 10px;border-radius:8px;white-space:nowrap;transition:.18s;
+}
+.topnav a:hover{color:var(--ink);background:rgba(63,169,143,.10)}
+.topnav a.on{color:#fff;background:var(--reach);font-weight:600;box-shadow:0 2px 6px rgba(63,169,143,.35)}
+body.has-topnav{padding-top:58px}
+@media(max-width:720px){.topnav .brand small{display:none}}
+
+/* 封面是深底压图。让导航条在封面上时换成深色玻璃，
+   否则一道米白色横条会把首屏画面从中间切开。 */
+body.at-cover .topnav{
+  background:rgba(12,18,26,.44);
+  border-bottom-color:rgba(255,255,255,.14);
+}
+body.at-cover .topnav .brand{color:#fff}
+body.at-cover .topnav .brand small{color:#8FD8C6}
+body.at-cover .topnav a{color:rgba(255,255,255,.72)}
+body.at-cover .topnav a:hover{color:#fff;background:rgba(255,255,255,.14)}
+body.at-cover .topnav a.on{background:var(--reach);color:#fff}
+body.at-cover .motion-toggle{color:rgba(255,255,255,.75);border-color:rgba(255,255,255,.4)}
+body.at-cover #rail .dot{background:rgba(255,255,255,.5);border-color:rgba(255,255,255,.55)}
+body.at-cover #rail .dot.on{background:var(--reach);border-color:#fff}
+
+/* 右侧章节进度轴 */
+#rail{position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:50;display:flex;flex-direction:column;gap:9px}
+#rail .dot{position:relative;width:11px;height:11px;border-radius:50%;cursor:pointer;background:#fff;border:1.5px solid rgba(90,80,60,.4);transition:all .2s}
+#rail .dot.on{background:var(--reach);border-color:var(--reach);transform:scale(1.32);box-shadow:0 0 0 4px rgba(63,169,143,.15)}
+#rail .dot:hover{transform:scale(1.38)}
+#rail .dot .tip{position:absolute;right:22px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:11px;color:var(--body);background:#fff;border:1px solid var(--line);border-radius:6px;padding:3px 9px;opacity:0;pointer-events:none;transition:opacity .15s}
+#rail .dot:hover .tip,#rail .dot.on .tip{opacity:1}
+@media(max-width:900px){#rail{display:none}}
+
+/* ============================================================
+   章节容器：透明底（让 .px-bg 视差背景层透出来）
+   ============================================================ */
+.ch{position:relative;z-index:1;padding:clamp(52px,7vw,92px) 0 clamp(60px,8vw,104px);scroll-margin-top:74px;background:transparent}
+.ch .inner{max-width:1080px;margin:0 auto;padding:0 clamp(18px,5vw,46px)}
+
+/* 章节横条按 data-chap 上色（对应章节主导色） */
+.ch[data-chap="#E8616B"]{--chap:#E8616B}
+.ch[data-chap="#3FA98F"]{--chap:#3FA98F}
+.ch[data-chap="#5B8FD9"]{--chap:#5B8FD9}
+.ch[data-chap="#6E5A9E"]{--chap:#6E5A9E}
+.ch[data-chap="#8A93A6"]{--chap:#8A93A6}
+
+/* ---------- 章节色：不再一章一块底色，改成"顶部柔光晕" ----------
+   全文共用一张底子（body 的纸色 + .px-bg 的柔光），每个章节只在开头
+   叠一层自己的颜色、向下融进纸里。既有章节区分，又不会出现硬接缝。 */
+.ch{isolation:isolate}
+.ch::before{
+  content:"";position:absolute;left:50%;top:0;z-index:-1;pointer-events:none;
+  width:min(180vw,2400px);height:min(105vh,900px);
+  transform:translateX(-50%);
+  background:radial-gradient(58% 62% at 50% 3%,
+    color-mix(in srgb, var(--chap,var(--crit)) 15%, transparent) 0%,
+    color-mix(in srgb, var(--chap,var(--crit)) 6%,  transparent) 40%,
+    transparent 72%);
+}
+.ch.cover::before{display:none}
+
+/* ---------- 章节头：只留章名大字，彩色手绘下划线，标示新篇章 ---------- */
+.ch .chapter-head{
+  position:relative;
+  padding-top:clamp(18px,3.5vh,32px);
+  margin-bottom:clamp(26px,4vh,40px);
+}
+.ch .chapter-head::before{ /* 顶部章节色短线 */
+  content:"";position:absolute;left:0;top:0;width:76px;height:5px;
+  border-radius:3px;background:var(--chap,var(--crit));
+}
+.ch-name{
+  position:relative;display:inline-block;
+  font-family:var(--font-title);font-weight:800;
+  font-size:clamp(30px,5vw,44px);line-height:1.3;letter-spacing:.05em;color:var(--ink);
+  padding-bottom:14px;
+}
+/* 手绘感粗下划线（章节色马克笔，轻斜） */
+.ch-name::after{
+  content:"";position:absolute;left:-3px;right:-3px;bottom:0;height:9px;
+  border-radius:5px;background:var(--chap,var(--crit));opacity:.38;
+  transform:rotate(-.4deg);transform-origin:left center;
+}
+/* 新篇章动效：章名上浮，马克笔下划线从左向右画出 */
+html.js .ch-name::after{transform:rotate(-.4deg) scaleX(0)}
+html.js .chapter-head.in .ch-name::after{animation:markerDraw .7s cubic-bezier(.22,.8,.24,1) .18s forwards}
+@keyframes markerDraw{to{transform:rotate(-.4deg) scaleX(1)}}
+.ch-sub{
+  font-family:var(--font-title);font-size:17px;line-height:1.9;
+  color:#6B6459;margin-top:14px;max-width:var(--measure);
+}
+
+/* ============================================================
+   数字卡：大数字 + 细横线 + 两行小字（去红图钉 / 去旋转）
+   ============================================================ */
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0;margin:30px 0 16px;align-items:stretch;background:#FFFDF4;border:1px solid #E9E0CA;border-radius:12px;box-shadow:0 2px 8px rgba(90,75,50,.06)}
+.sticky{position:relative;padding:30px 26px 26px}
+.sticky+.sticky{border-left:1px solid #E9E0CA}
+.sticky .sv{font-family:var(--font-num);font-weight:800;font-size:clamp(28px,3.2vw,42px);line-height:1;font-variant-numeric:tabular-nums;color:var(--ink)}
+.sticky .sv.gap{color:var(--gapR)}
+.sticky .sv.amber{color:var(--critO)}
+.sticky .su{display:block;font-size:14.5px;font-weight:700;color:var(--ink);margin-top:14px;padding-top:12px;border-top:1px solid var(--line2)}
+.sticky .sd{font-size:12px;color:var(--mute);margin-top:6px;font-family:var(--font-body);line-height:1.6}
+@media(max-width:760px){.sticky+.sticky{border-left:none;border-top:1px solid #E9E0CA}}
+
+/* ============================================================
+   排版三层制：正文块 / 引导句 / 结论句
+   ============================================================ */
+.blk{margin:44px 0;max-width:44em}
+.blk>p{font-size:16px;line-height:1.9;color:#3D3A34}
+.blk>p+p{margin-top:1.15em}   /* 段内：紧 */
+
+.blk-lead{
+  font-family:var(--font-title);font-size:19px;line-height:1.85;
+  color:#5C6B85;max-width:var(--measure);margin:56px 0 18px;
+}
+
+.ck{
+  position:relative;margin:28px 0 44px;padding-left:20px;
+  font-family:var(--font-title);font-size:18px;font-weight:600;
+  color:var(--ink);line-height:1.85;max-width:var(--measure);
+}
+.ck::before{content:"";position:absolute;left:0;top:.3em;bottom:.3em;width:3.5px;
+  border-radius:2px;background:var(--reach);transform-origin:top}
+html.js .ck::before{transform:scaleY(0)}
+html.js .ck.in::before{animation:lineGrow .5s ease-out forwards}
+@keyframes lineGrow{to{transform:scaleY(1)}}
+.ck.verm::before{background:var(--gap)}
+.ck.amber::before{background:var(--critO)}
+.ck.time::before{background:var(--time)}
+.ck b{color:var(--gapR);font-weight:700}
+.ck.big{font-size:clamp(26px,4.6vw,40px);max-width:20em;margin:clamp(48px,10vh,90px) 0;padding-left:26px}
+
+/* ============================================================
+   图版：简洁纸面板
+   ============================================================ */
+.fig{margin:38px 0 26px}
+.fig-title{
+  position:relative;font-family:var(--font-title);font-weight:700;font-size:20px;color:var(--ink);
+  line-height:1.5;margin-bottom:12px;display:inline-block;
+  padding-bottom:4px;
+}
+/* 图题动效：琥珀下划线随图滚入从左向右画出 */
+.fig-title::after{
+  content:"";position:absolute;left:0;bottom:0;width:100%;height:2.5px;
+  border-radius:2px;background:var(--accent);transform-origin:left center;
+}
+html.js .fig-title::after{transform:scaleX(0)}
+html.js .fig.in .fig-title::after{animation:lineDraw .6s ease-out .1s forwards}
+@keyframes lineDraw{to{transform:scaleX(1)}}
+.fig-panel{
+  position:relative;background:#FFFDF6;border:1px solid #E9E0CA;
+  padding:28px 26px 14px;margin:20px 0 14px;border-radius:10px;
+  box-shadow:0 4px 14px rgba(90,75,50,.09),0 1px 2px rgba(90,75,50,.06);
+}
+.fig-body{width:100%;height:460px;position:relative}
+.fig-fw{max-width:100%}
+
+/* 全宽出血图版（图6 地图） */
+.fig-fw{width:100vw;margin-left:calc(50% - 50vw);padding-left:max(16px,calc((100vw - 1080px)/2));padding-right:max(16px,calc((100vw - 1080px)/2))}
+.fig-fw .fig-panel{max-width:1080px;margin-left:auto;margin-right:auto}
+@media(max-width:1080px){.fig-fw{padding-left:clamp(12px,4vw,30px);padding-right:clamp(12px,4vw,30px)}}
+
+/* 图内交互条 */
+.chipbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chipbar button,.scrubbar button{
+  font-family:inherit;font-size:12.5px;padding:5px 13px;cursor:pointer;
+  background:#fff;border:1px solid var(--line);border-radius:999px;color:var(--body);transition:.15s;
+}
+.chipbar button:hover,.scrubbar button:hover{border-color:var(--reach);color:var(--reach)}
+.chipbar button.on{background:var(--reach);border-color:var(--reach);color:#fff;font-weight:700}
+.scrubbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;font-size:13px;color:var(--body)}
+.scrubbar input[type=range]{flex:1;min-width:140px;accent-color:var(--a4);cursor:pointer}
+.scrubbar .scrub-now{min-width:86px;font-weight:700;color:var(--gapR)}
+.scrubbar button:hover{border-color:var(--reach);color:var(--reach)}
+
+/* ---------- 图注：珊瑚色标签 ---------- */
+.fig-note{
+  font-size:12.5px;line-height:1.75;margin-top:12px;max-width:var(--measure);
+  color:#8A4A52;background:rgba(232,97,107,.08);
+  border-left:3.5px solid var(--gap);padding:.5em .9em;border-radius:0 8px 8px 0;
+}
+.fig-note b{font-weight:700;color:var(--gapR)}
+
+/* ---------- 口径折叠 ---------- */
+.footnote details{border-top:1px solid var(--line2);padding:14px 0}
+.footnote summary{cursor:pointer;font-weight:600;color:var(--ink);list-style:none;padding:6px 0}
+.footnote summary::after{content:"＋";float:right;color:var(--mute)}
+.footnote details[open] summary::after{content:"－"}
+.footnote details .box{margin-top:10px;font-size:13px;line-height:1.9;color:var(--body)}
+.footnote details .box ul{padding-left:1.2em}
+
+/* ============================================================
+   封面 S0：独立一页，深底压图 + 三行文字 + 滚动提示
+   ============================================================ */
+.cover{
+  position:relative;height:calc(100svh - 58px);min-height:520px;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:0 clamp(20px,6vw,72px) clamp(56px,10vh,110px);
+  overflow:hidden;background:#101820;
+  text-align:left;
+}
+.cover-media{position:absolute;inset:0;z-index:0}
+.cover-media img{
+  width:100%;height:100%;object-fit:cover;object-position:center 58%;
+  transform:scale(1.02);
+  animation:coverPush 24s ease-in-out infinite alternate;   /* 底图缓慢推近 */
+}
+@keyframes coverPush{from{transform:scale(1.02)}to{transform:scale(1.10)}}
+.cover-veil{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(180deg,rgba(10,16,24,.34) 0%,rgba(10,16,24,.08) 34%,rgba(10,16,24,.82) 100%),
+    linear-gradient(90deg,rgba(10,16,24,.58) 0%,rgba(10,16,24,0) 64%);
+}
+.cover-body{position:relative;z-index:1;width:min(94%,1200px);text-align:center}
+.cover-title{
+  font-family:var(--font-title);font-weight:800;color:#fff;
+  font-size:clamp(36px,7.5vw,78px);line-height:1.3;letter-spacing:.03em;
+  text-shadow:0 2px 30px rgba(0,0,0,.55);
+}
+.cover-title .t-l1,.cover-title .t-l2{display:block}
+.cover-title .t-l2{margin-top:.22em}
+.cover-sub{margin:28px auto 0;max-width:36em;font-size:16px;color:rgba(255,255,255,.85);line-height:2}
+
+/* 入场：封面标题两行等权重 + 副句，错开上推 */
+html.js .cover-title .t-l1,
+html.js .cover-title .t-l2,
+html.js .cover-sub{opacity:0;transform:translateY(24px)}
+.cover.in .cover-title .t-l1{animation:rise .9s cubic-bezier(.22,.8,.24,1) .15s forwards}
+.cover.in .cover-title .t-l2{animation:rise .9s cubic-bezier(.22,.8,.24,1) .32s forwards}
+.cover.in .cover-sub{animation:rise .9s cubic-bezier(.22,.8,.24,1) .5s forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+
+/* 底部滚动提示：一条会反复生长的竖线 */
+.cover-scroll{position:absolute;left:50%;bottom:26px;z-index:1;width:1px;height:54px;
+  background:rgba(255,255,255,.20);overflow:hidden}
+.cover-scroll i{position:absolute;inset:0;background:#fff;
+  animation:scrollHint 2.4s ease-in-out infinite}
+@keyframes scrollHint{
+  0%{transform:scaleY(0);transform-origin:top}
+  45%{transform:scaleY(1);transform-origin:top}
+  55%{transform:scaleY(1);transform-origin:bottom}
+  100%{transform:scaleY(0);transform-origin:bottom}
+}
+
+/* ============================================================
+   标题页 S1：只有一句大字（词字逐字上推 + 问号延后落下）
+   ============================================================ */
+.titlepage{
+  min-height:calc(100svh - 58px);display:flex;align-items:center;
+  padding:0 clamp(20px,6vw,46px);background:transparent;
+}
+.titlepage .q-big{
+  font-family:var(--font-title);font-weight:700;color:var(--ink);
+  font-size:clamp(34px,6vw,66px);line-height:1.42;max-width:16em;
+}
+.titlepage .q-big .qmark{color:var(--gapR)}
+html.js .titlepage .q-big .w{display:inline-block;opacity:0;transform:translateY(.5em)}
+html.js .titlepage .q-big .qmark{opacity:0}
+.titlepage.in .q-big .w{animation:rise .7s cubic-bezier(.22,.8,.24,1) .12s forwards}
+.titlepage.in .q-big .w:nth-child(3){animation-delay:.26s}
+.titlepage.in .q-big .qmark{animation:rise .7s cubic-bezier(.22,.8,.24,1) .44s forwards}
+
+/* ============================================================
+   双路径同框：地图上的直线 ≠ 真实的路与门
+   ============================================================ */
+.twopath{margin:14px 0 34px}
+.path-svg{display:block;width:100%;height:auto;max-width:980px;margin:0 auto}
+.path-svg .pl{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.path-svg .pl-straight{stroke:#8A93A6;stroke-width:2.5;stroke-dasharray:1 8}   /* 灰蓝 · 笔直 · 细 */
+.path-svg .pl-real{stroke:#E8616B;stroke-width:4}                              /* 珊瑚 · 弯曲 · 略粗 */
+.path-svg .pn{fill:#fff;stroke-width:2.5}
+.path-svg .pn-straight{stroke:#8A93A6}
+.path-svg .pn-real{stroke:#E8616B}
+.path-svg .pn-home{fill:#E8A33D;stroke:#C08A2E}
+.path-svg text{font-family:var(--font-body);font-size:13px;font-weight:600}
+.path-svg .l-home,.path-svg .l-she{font-family:var(--font-title);fill:var(--ink)}
+.path-svg .l-home{font-size:16px}
+.path-svg .l-she{font-size:13px}
+.path-svg .l-straight{fill:#8A93A6}
+.path-svg .l-real{fill:#C5485C}
+.path-svg .l-ann{font-size:12px;fill:#8A93A6;font-weight:500;letter-spacing:.08em}
+.twopath .path-note{margin:16px auto 0;max-width:var(--measure);font-size:15px;line-height:2;color:var(--body)}
+
+/* ---------- 开篇问题链 ---------- */
+.qb{position:relative;margin:20px 0 36px;padding-left:52px;max-width:40em}
+.qhead{font-family:var(--font-title);font-weight:600;font-size:15px;color:var(--mute);margin:0 0 20px}
+.tl{position:absolute;left:12px;top:0;bottom:0;width:22px}
+.tl-line,.tl-fill{position:absolute;left:50%;top:6px;bottom:6px;width:3px;transform:translateX(-50%);border-radius:2px}
+.tl-line{background:var(--line)}
+.tl-fill{background:var(--reach);height:0;transition:height .7s ease}
+.tl-node{position:absolute;left:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--line);z-index:2;transition:.35s}
+.tl-node.on{background:var(--reach);border-color:var(--reach);transform:translate(-50%,-50%) scale(1.22)}
+.ql{display:flex;align-items:center;gap:18px;opacity:.5;transform:translateY(12px);transition:opacity .6s,transform .6s}
+.ql.in{opacity:1;transform:none}
+.ql .qi{flex:0 0 auto;transform:rotate(-3deg)}
+.ql p{font-family:var(--font-title);font-size:clamp(22px,3vw,27px);color:var(--ink);line-height:1.6;font-weight:600}
+@media(max-width:640px){.qb{padding-left:38px}.tl{left:6px}.ql{gap:12px}}
+
+/* ============================================================
+   文字-图表对页 / 并排
+   ============================================================ */
+.fig-side .side-inner{display:grid;gap:28px;align-items:start}
+@media(min-width:960px){.fig-side .side-inner{grid-template-columns:minmax(280px,340px) 1fr}}
+.estate-illus{max-width:300px;margin:14px auto}
+
+/* 官方 vs 实测：左右并排 + 中缝竖线 */
+.ovs{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:30px 0 36px;background:#FFFDF4;border:1px solid #E9E0CA;border-radius:12px;box-shadow:0 2px 8px rgba(90,75,50,.06);overflow:hidden}
+.ovs-card{padding:26px 30px 22px}
+.ovs-card+.ovs-card{border-left:1px solid #E9E0CA}
+.ovs-num{font-family:var(--font-num);font-weight:800;font-size:52px;line-height:1;color:var(--reach);font-variant-numeric:tabular-nums}
+.ovs-num.verm{color:var(--gap)}
+.ovs-unit{font-size:22px}
+.ovs-lab{font-weight:700;color:var(--ink);margin-top:8px}
+.ovs-txt{font-size:13px;color:var(--body);margin-top:6px;line-height:1.7}
+@media(max-width:600px){.ovs{grid-template-columns:1fr}.ovs-card+.ovs-card{border-left:none;border-top:1px solid #E9E0CA}}
+
+/* ---------- 三城对照：一列三个横条（左城市 / 右图） ---------- */
+.tricards{margin:30px 0}
+.sample{display:grid;grid-template-columns:minmax(240px,340px) 1fr;gap:30px;align-items:center;padding:30px 0;border-top:1px solid var(--line)}
+.sample:first-child{border-top:none}
+.sample .city{grid-column:1;grid-row:1;display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.sample .mech{grid-column:1;grid-row:2;font-size:14px;color:var(--body);line-height:1.85}
+.sample .city .nm{font-family:var(--font-title);font-weight:700;font-size:23px;color:var(--ink)}
+.sample .city .k{font-size:11.5px;color:var(--mute);font-weight:600}
+.sample .fig{grid-column:2;grid-row:1 / span 2;min-width:0;margin:0}
+.sample .fig-panel{padding:14px 12px 8px;box-shadow:none;margin:0;border-radius:8px;background:#FBF8EF}
+.sample .fig-body{height:250px}
+.sample .srcn{font-size:12.5px;color:var(--gapR);font-weight:700;margin-top:10px}
+@media(max-width:820px){
+  .sample{grid-template-columns:1fr;gap:16px;padding:24px 0}
+  .sample .fig{grid-column:1;grid-row:auto}
+  .sample .city{grid-row:auto}
+  .sample .mech{grid-row:auto}
+}
+
+/* ---------- 177 家便签墙 ---------- */
+.note-wall{margin:40px 0;padding:24px 26px;background:#FFFDF6;border:1px solid #E9E0CA;border-left:4px solid var(--miss);border-radius:12px;box-shadow:0 3px 10px rgba(90,75,50,.07)}
+.wall-cap{font-size:13.5px;color:var(--body);margin-bottom:16px;line-height:1.9;max-width:46em}
+.wall-cap b{color:var(--gapR)}
+.badgewall{display:grid;grid-template-columns:repeat(auto-fill,minmax(9px,1fr));gap:3px;max-width:600px}
+.badge{aspect-ratio:1;border-radius:2px;background:var(--miss);opacity:.85;transition:transform .2s}
+.badge:hover{transform:scale(1.8);opacity:1;z-index:3;position:relative}
+
+/* ============================================================
+   章节钩子
+   ============================================================ */
+.hook{margin:50px 0 8px;max-width:36em;padding:18px 0 16px 22px;position:relative;font-family:var(--font-title);font-size:18px;color:var(--ink);line-height:1.95;border-top:1px solid var(--line)}
+.hook::before{content:"";position:absolute;left:0;top:18px;bottom:16px;width:4px;border-radius:2px;background:var(--a4)}
+.hook .shake{display:block;margin-top:8px;color:var(--mute);font-size:12px;font-family:var(--font-body)}
+
+/* ============================================================
+   终章 S7
+   ============================================================ */
+.finale{min-height:70vh;display:flex;align-items:center}
+.finale .inner{width:100%}
+.finale .back{font-family:var(--font-title);font-size:22px;color:var(--gapR);margin-bottom:36px}
+.finale .tier{display:flex;align-items:flex-start;gap:18px;margin:28px 0;max-width:44em}
+.finale .tier .illus{flex:0 0 auto;width:64px;height:48px;margin-top:2px;transform:rotate(-2deg)}
+.finale .tier .tier-t{font-family:var(--font-title);font-size:clamp(18px,2.8vw,25px);line-height:1.6;color:var(--ink)}
+.finale .tier .tier-t b{font-weight:600}
+.finale .tier .ck{min-height:52px;margin:6px 0 0;padding-left:14px;font-size:14.5px;font-weight:500;color:var(--body);max-width:40em}
+.finale .tier .ck::before{width:3px}
+.finale .tier.s2{margin-left:1.7em}
+.finale .tier.s3{margin-left:3.3em}
+@media(max-width:640px){.finale .tier.s2{margin-left:.4em}.finale .tier.s3{margin-left:.9em}}
+
+footer{padding:46px 0 64px;text-align:center;font-size:12px;color:var(--mute);border-top:1px solid var(--line)}
+
+/* ---------- 通用插画：手绘风统一样式 ---------- */
+.illus{display:block;max-width:100%;stroke-linecap:round;stroke-linejoin:round}
+.illus text{font-family:var(--font-title);fill:#4A3F35;user-select:none}
+.hand{stroke-linecap:round;stroke-linejoin:round;fill:none}
+
+/* ---------- 滚动淡入（块级：一个块只浮上来一次） ----------
+   一律挂在 html.js 下：万一脚本没跑起来（离线打开、被墙、JS 报错），
+   内容仍然是可见的，不会出现"整页空白"。 */
+html.js [data-reveal]{opacity:0;transform:translateY(16px);transition:opacity .7s ease,transform .7s ease}
+html.js [data-reveal].in{opacity:1;transform:none}
+
+/* ============================================================
+   背景层：一张底子走到底（fixed，视口内柔光斑缓慢漂移）
+   - 删掉原来的 .dots：纸面颗粒由 body::before 一层负责，两层点阵是重复的
+   - 四团光斑全部落在视口内（原来 b4 在 top:110vh，永远看不见）
+   ============================================================ */
+.px-bg{
+  position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+  will-change:transform;
+}
+.px-bg .blob{
+  position:absolute;border-radius:50%;filter:blur(72px);
+}
+.px-bg .b1{width:78vw;height:78vw;left:-24vw;top:-22vh;background:radial-gradient(circle,rgba(63,169,143,.26),transparent 68%)}
+.px-bg .b2{width:68vw;height:68vw;right:-22vw;top:2vh;background:radial-gradient(circle,rgba(91,143,217,.24),transparent 68%)}
+.px-bg .b3{width:72vw;height:72vw;left:-16vw;top:38vh;background:radial-gradient(circle,rgba(232,163,61,.20),transparent 68%)}
+.px-bg .b4{width:64vw;height:64vw;right:-18vw;top:62vh;background:radial-gradient(circle,rgba(110,90,158,.19),transparent 68%)}
+
+/* 插图容器：原始比例、不拉伸 */
+.shot{position:relative;margin:34px auto 38px;max-width:min(100%,880px);will-change:transform}
+.shot.full{max-width:min(100%,1080px)}
+.shot.wide{max-width:min(100%,980px)}
+.shot img{
+  display:block;width:100%;height:auto;aspect-ratio:auto;
+  border-radius:14px;object-fit:cover;
+  background:#EFE8DC;
+  filter:sepia(.06) saturate(.92) contrast(1.01);
+  box-shadow:0 2px 4px rgba(90,80,60,.08),0 14px 30px rgba(90,80,60,.10);
+}
+/* 第五章：旧纸黄罩 + 降饱和 */
+.shot.paperwash img{filter:sepia(.24) saturate(.68) brightness(.97) contrast(.95)}
+.shot.paperwash::after{
+  content:"";position:absolute;inset:0;border-radius:14px;pointer-events:none;
+  background:linear-gradient(160deg,rgba(240,220,158,.18),rgba(240,220,158,.05) 55%,rgba(180,150,90,.14));
+}
+
+/* 前景层：三联图（移动更快） */
+.triad{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:44px auto 10px;max-width:min(100%,960px);will-change:transform}
+.triad .shot{margin:0;max-width:none}
+.triad .shot img{aspect-ratio:1/1;border-radius:14px}
+.triad-cap{text-align:center;font-family:var(--font-title);color:#7A6B58;margin:6px 0 8px;font-size:15px}
+
+/* 减少动态：开关态 + 系统偏好 + 移动端（只停位移，不再把背景调暗） */
+body.motion-off .px-bg,
+body.motion-off .shot,
+body.motion-off .triad{transform:none !important}
+.motion-toggle{
+  font-family:var(--font-body);font-size:12px;color:#7A6B58;cursor:pointer;
+  background:transparent;border:1px solid rgba(160,140,105,.45);border-radius:999px;
+  padding:4px 12px;margin-left:10px;white-space:nowrap;transition:.2s;
+}
+.motion-toggle:hover{border-color:var(--crit);color:var(--crit)}
+body.motion-off .motion-toggle{background:rgba(232,97,107,.12);border-color:var(--crit);color:var(--crit)}
+@media(max-width:720px){
+  .motion-toggle{display:inline-block}
+}
+@media (prefers-reduced-motion:reduce){
+  .px-bg,.shot,.triad{transform:none !important}
+  html.js .ch-name::after{transform:rotate(-.4deg)}
+  html.js .fig-title::after{transform:none}
+  .motion-toggle{display:none}
+}
+@media(max-width:720px){
+  .px-bg .blob{filter:blur(52px)}
+}
+
+/* ---------- 移动端 ---------- */
+@media(max-width:640px){
+  .fig-body{height:380px}
+  .sample .fig-body{height:210px}
+  .triad{gap:10px}
+  .shot{margin:22px auto 28px}
+}
